@@ -90,12 +90,14 @@ def rich_text_to_markdown(
 ) -> str:
     """rich_text_dict: The dictionary containing the rich text data from Notion API"""
     type_ = rich_text_dict.get("type", "text")
-    if type_ == "text":
-        text = rich_text_dict[type_].get("content", "")
-    elif type_ == "equation":  # inline the expression
-        text = rich_text_dict[type_].get("expression", "")
-        return f"${text}$"
-    text = rich_text_dict[type_].get("content", "")
+    # each rich text has `plain_text` which is equivalent to its content
+    # https://developers.notion.com/reference/rich-text
+    plain_text = rich_text_dict.get("plain_text", "")
+
+    # inline the expression, return the plain text wrapped in $
+    if type_ == "equation":
+        return f"${plain_text}$"
+
     annotations = rich_text_dict.get("annotations", {})
     bold = annotations.get("bold", False)
     italic = annotations.get("italic", False)
