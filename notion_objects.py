@@ -240,6 +240,18 @@ class BlockParser:
         display(Markdown(self.markdown_text))
 
 
+class Empty(BlockParser):
+    def __init__(
+        self,
+        block: Optional[Block] = None,
+        raw_dict: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(block, raw_dict)
+
+    def convert_to_markdown(self):
+        return ""  # nothing to convert
+
+
 class Paragraph(BlockParser):
     def __init__(
         self,
@@ -300,7 +312,7 @@ class OrderedList(BlockParser):
         return f"{self.number}. {string}"
 
 
-class TableRow(BlockParser):
+class _TableRow(BlockParser):
 
     def __init__(
         self,
@@ -332,7 +344,7 @@ class Table(BlockParser):
 
         # header row
         header_row = table_children[0]
-        header_row_markdown = TableRow(header_row).convert_to_markdown()
+        header_row_markdown = _TableRow(header_row).convert_to_markdown()
         # create the separator row
         cells = (
             header_row_markdown.count("|") - 1
@@ -342,7 +354,7 @@ class Table(BlockParser):
         # other rows
         other_rows = table_children[1:]
         other_rows_markdown = [
-            TableRow(row).convert_to_markdown() for row in other_rows
+            _TableRow(row).convert_to_markdown() for row in other_rows
         ]
         return "\n".join([header_row_markdown, separator_row] + other_rows_markdown)
 
@@ -464,6 +476,18 @@ class Code(BlockParser):
         language = self.text_dict.get("language", "plain text")
         code = self._rich_texts_to_markdown(code)
         return f"```{language}\n{code}\n```"
+
+
+class Divider(BlockParser):
+    def __init__(
+        self,
+        block: Optional[Block] = None,
+        raw_dict: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(block, raw_dict)
+
+    def convert_to_markdown(self):
+        return "---"
 
 
 block_type_to_parser_map = {
