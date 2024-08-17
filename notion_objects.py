@@ -4,10 +4,9 @@ from typing import List, Dict, Any, Union, Optional
 
 from IPython.display import display, Markdown
 import logging
-import re, os
+import re
 from env import NOTION_SECRET_KEY, LOG_LEVEL
 
-FILE_NAME = os.path.basename(__file__).split(".")[0]
 notion = Client(auth=NOTION_SECRET_KEY)
 
 
@@ -37,7 +36,7 @@ def create_simple_logger(name, level=LOG_LEVEL):
     return logger
 
 
-logger = create_simple_logger(FILE_NAME)
+logger = create_simple_logger(__name__)
 
 
 def remove_link(title: str) -> str:
@@ -105,22 +104,22 @@ def rich_text_to_markdown(
     href = rich_text_dict.get("href", None)
 
     if bold:
-        text = f"**{text.strip()}**"
+        plain_text = f"**{plain_text.strip()}**"
     if italic:
-        text = f"*{text.strip()}*"
+        plain_text = f"*{plain_text.strip()}*"
     if strikethrough:
-        text = f"~~{text.strip()}~~"
+        plain_text = f"~~{plain_text.strip()}~~"
     if underline:
-        text = f"<u>{text.strip()}</u>"
+        plain_text = f"<u>{plain_text.strip()}</u>"
     if href:
-        text = f"[{text}]({href})"
-    return text
+        plain_text = f"[{plain_text}]({href})"
+    return plain_text
 
 
 class Block:
 
     def __init__(self, block_id: str, block_dict: Optional[Dict[str, Any]] = None):
-        self.logger = create_simple_logger(FILE_NAME + "." + self.__class__.__name__)
+        self.logger = create_simple_logger(__name__ + "." + self.__class__.__name__)
         self.block_id = block_id
         self.block_dict = block_dict or notion.blocks.retrieve(block_id=self.block_id)
         self._has_children: bool = None
@@ -190,7 +189,7 @@ class BlockParser:
     def __init__(
         self, block: Optional[Block] = None, raw_dict: Optional[Dict[str, Any]] = None
     ) -> None:
-        self.logger = create_simple_logger(FILE_NAME + "." + self.__class__.__name__)
+        self.logger = create_simple_logger(__name__ + "." + self.__class__.__name__)
         if block is None and raw_dict is None:
             m = "Either block or raw_dict should be provided"
             self.logger.error(m)
@@ -481,16 +480,19 @@ block_type_to_parser_map = {
     "child_page": ChildPage,
     "bookmark": Bookmark,
     "code": Code,
+    "divider": Divider,
+    "column_list": Empty,  # not creating columns. Each column will be parsed separately
+    "column": Empty,  ## not creating columns. Each column will be parsed separately
 }
 
-types_to_ignore = ["table_row"]
+types_to_ignore = ["table_row", "column"]
 
 
 class Parser:
     def __init__(self, root_block: Block, max_depth: int = 5):
         self.root_block = root_block
         self.max_depth = max_depth
-        self.logger = create_simple_logger(FILE_NAME + "." + self.__class__.__name__)
+        self.logger = create_simple_logger(__name__ + "." + self.__class__.__name__)
         self.markdown_text = ""
 
     def parse_block(self, block: Block, parent_child_same_type: int = 0):
